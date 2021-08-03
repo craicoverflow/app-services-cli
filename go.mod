@@ -19,6 +19,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.12 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.1.2
 	github.com/openconfig/goyang v0.2.7
+	github.com/openshift-online/ocm-sdk-go v0.1.197
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
 	github.com/redhat-developer/app-services-sdk-go v0.9.2

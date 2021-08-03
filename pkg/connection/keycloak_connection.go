@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/redhat-developer/app-services-cli/pkg/api/termsreview"
 	kafkainstance "github.com/redhat-developer/app-services-sdk-go/kafkainstance/apiv1internal"
 	kafkainstanceclient "github.com/redhat-developer/app-services-sdk-go/kafkainstance/apiv1internal/client"
 	kafkamgmt "github.com/redhat-developer/app-services-sdk-go/kafkamgmt/apiv1"
@@ -16,7 +17,6 @@ import (
 	registrymgmtclient "github.com/redhat-developer/app-services-sdk-go/registrymgmt/apiv1/client"
 	"golang.org/x/oauth2"
 
-	"github.com/redhat-developer/app-services-cli/pkg/api/ams/amsclient"
 	"github.com/redhat-developer/app-services-cli/pkg/api/kas"
 
 	"github.com/redhat-developer/app-services-cli/pkg/kafka/kafkaerr"
@@ -154,10 +154,8 @@ func (c *KeycloakConnection) Logout(ctx context.Context) (err error) {
 // API Creates a new API type which is a single type for multiple APIs
 // nolint:funlen
 func (c *KeycloakConnection) API() *api.API {
-	amsAPIFunc := func() amsclient.DefaultApi {
-		amsAPIClient := c.createAmsAPIClient()
-
-		return amsAPIClient.DefaultApi
+	termsAPIFunc := func() termsreview.TermsReviewAPI {
+		return c.createTermsReviewClient()
 	}
 
 	kafkaAPIFunc := func() kafkamgmtclient.DefaultApi {
@@ -224,18 +222,18 @@ func (c *KeycloakConnection) API() *api.API {
 		Kafka:               kafkaAPIFunc,
 		ServiceAccount:      serviceAccountAPIFunc,
 		KafkaAdmin:          kafkaAdminAPIFunc,
-		AccountMgmt:         amsAPIFunc,
+		TermsReview:         termsAPIFunc,
 		ServiceRegistryMgmt: registryAPIFunc,
 	}
 }
 
 // Create a new Kafka API client
 func (c *KeycloakConnection) createKafkaAPIClient() *kafkamgmtclient.APIClient {
-	tc := c.createOAuthTransport(c.Token.AccessToken)
+	tr := c.createOAuthTransport(c.Token.AccessToken)
 	client := kafkamgmt.NewAPIClient(&kafkamgmt.Config{
 		BaseURL:    c.apiURL.String(),
 		Debug:      c.logger.DebugEnabled(),
-		HTTPClient: tc,
+		HTTPClient: &http.Client{Transport: tr},
 	})
 
 	return client
@@ -243,11 +241,11 @@ func (c *KeycloakConnection) createKafkaAPIClient() *kafkamgmtclient.APIClient {
 
 // Create a new Registry API client
 func (c *KeycloakConnection) createServiceRegistryAPIClient() *registrymgmtclient.APIClient {
-	tc := c.createOAuthTransport(c.Token.AccessToken)
+	tr := c.createOAuthTransport(c.Token.AccessToken)
 	client := registrymgmt.NewAPIClient(&registrymgmt.Config{
 		BaseURL:    c.apiURL.String(),
 		Debug:      c.logger.DebugEnabled(),
-		HTTPClient: tc,
+		HTTPClient: &http.Client{Transport: tr},
 	})
 
 	return client
@@ -276,40 +274,35 @@ func (c *KeycloakConnection) createKafkaAdminAPI(bootstrapURL string) *kafkainst
 
 	c.logger.Debugf("Making request to %v", apiURL.String())
 
+	tr := c.createOAuthTransport(c.MASToken.AccessToken)
+
 	client := kafkainstance.NewAPIClient(&kafkainstance.Config{
 		BaseURL:    apiURL.String(),
 		Debug:      c.logger.DebugEnabled(),
-		HTTPClient: c.createOAuthTransport(c.MASToken.AccessToken),
+		HTTPClient: &http.Client{Transport: tr},
 	})
 
 	return client
 }
 
-func (c *KeycloakConnection) createAmsAPIClient() *amsclient.APIClient {
-	cfg := amsclient.NewConfiguration()
+func (c *KeycloakConnection) createTermsReviewClient() termsreview.TermsReviewAPI {
+	tr := c.createOAuthTransport(c.Token.AccessToken)
 
-	cfg.Scheme = c.apiURL.Scheme
-	cfg.Host = c.apiURL.Host
-
-	cfg.HTTPClient = c.createOAuthTransport(c.Token.AccessToken)
-
-	apiClient := amsclient.NewAPIClient(cfg)
-
-	return apiClient
+	return termsreview.NewClient(tr, c.apiURL.String())
 }
 
 // wraps the HTTP client with an OAuth2 Transport layer to provide automatic token refreshing
-func (c *KeycloakConnection) createOAuthTransport(accessToken string) *http.Client {
+func (c *KeycloakConnection) createOAuthTransport(accessToken string) *oauth2.Transport {
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{
 			AccessToken: accessToken,
 		},
 	)
 
-	return &http.Client{
-		Transport: &oauth2.Transport{
-			Base:   c.defaultHTTPClient.Transport,
-			Source: oauth2.ReuseTokenSource(nil, ts),
-		},
+	tr := oauth2.Transport{
+		Base:   c.defaultHTTPClient.Transport,
+		Source: oauth2.ReuseTokenSource(nil, ts),
 	}
+
+	return &tr
 }

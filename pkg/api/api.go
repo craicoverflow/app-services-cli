@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/redhat-developer/app-services-cli/pkg/api/ams/amsclient"
+	"github.com/redhat-developer/app-services-cli/pkg/api/termsreview"
 	kafkainstanceclient "github.com/redhat-developer/app-services-sdk-go/kafkainstance/apiv1internal/client"
 	kafkamgmtclient "github.com/redhat-developer/app-services-sdk-go/kafkamgmt/apiv1/client"
 	srsmgmtclient "github.com/redhat-developer/app-services-sdk-go/registrymgmt/apiv1/client"
@@ -12,7 +12,7 @@ type API struct {
 	Kafka          func() kafkamgmtclient.DefaultApi
 	ServiceAccount func() kafkamgmtclient.SecurityApi
 	KafkaAdmin     func(kafkaID string) (*kafkainstanceclient.APIClient, *kafkamgmtclient.KafkaRequest, error)
-	AccountMgmt    func() amsclient.DefaultApi
+	TermsReview    func() termsreview.TermsReviewAPI
 
 	ServiceRegistryMgmt func() srsmgmtclient.RegistriesApi
 }

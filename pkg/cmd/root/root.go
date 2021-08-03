@@ -3,6 +3,7 @@ package root
 import (
 	"flag"
 
+	"github.com/redhat-developer/app-services-cli/pkg/arguments"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/config"
 
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/registry"
@@ -11,7 +12,6 @@ import (
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/status"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/whoami"
 
-	"github.com/redhat-developer/app-services-cli/pkg/arguments"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/cluster"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/completion"
 	"github.com/redhat-developer/app-services-cli/pkg/cmd/factory"
@@ -38,7 +38,7 @@ func NewRootCommand(f *factory.Factory, version string) *cobra.Command {
 	var help bool
 
 	fs.BoolVarP(&help, "help", "h", false, f.Localizer.MustLocalize("root.cmd.flag.help.description"))
-	fs.Bool("version", false, f.Localizer.MustLocalize("root.cmd.flag.version.description"))
+	fs.BoolP("version", "r", false, f.Localizer.MustLocalize("root.cmd.flag.version.description"))
 
 	cmd.Version = version
 

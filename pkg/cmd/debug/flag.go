@@ -9,7 +9,7 @@ func AddFlag(flags *pflag.FlagSet) {
 	flags.BoolVarP(
 		&enabled,
 		"verbose",
-		"v",
+		"x",
 		false,
 		"Enable verbose mode",
 	)
